@@ -49,7 +49,6 @@ u1-alert::part(icon) {
 ::part(close): The close button.
 ::part(icon): The icon.
 
-
 ## Install
 
 ```html
@@ -61,7 +60,6 @@ u1-alert::part(icon) {
 
 [minimal.html](http://gcdn.li/u1ui/alert.el@main/tests/minimal.html)  
 [test.html](http://gcdn.li/u1ui/alert.el@main/tests/test.html)  
-
 
 ## About
 
