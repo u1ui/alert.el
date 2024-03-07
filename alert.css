@@ -10,7 +10,7 @@ u1-alert {
     display:block;
     font-size: max(13px, .8rem);
     padding: 1em;
-    margin: 1em 0;
+    margin-block: 1em;
     box-shadow: 0 0 .3em #0004;
     border-color: var(--color);
     border-style: solid;

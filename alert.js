@@ -2,15 +2,15 @@ class alert extends HTMLElement {
     constructor() {
         super();
 
-         // import only when needed
-        import('../focusgroup.attr/focusgroup.js'); // https://cdn.jsdelivr.net/gh/u1ui/focusgroup.attr@4.0.0/focusgroup.js
-        import('../ico.el/ico.js'); // https://cdn.jsdelivr.net/gh/u1ui/ico.el@4.0.0/ico.js
+        // import only when needed
+        import('../focusgroup.attr@4.0.0/focusgroup.min.js'); // https://cdn.jsdelivr.net/gh/u1ui/focusgroup.attr@4.0.0/focusgroup.js
+        import('../ico.el@4.0.0/ico.min.js'); // https://cdn.jsdelivr.net/gh/u1ui/ico.el@4.0.0/ico.js
 
         this.attachShadow({mode: 'open'});
         this.shadowRoot.innerHTML = `
             <style>
                 @import url('https://cdn.jsdelivr.net/gh/u1ui/ico.el@4.0.0/ico.css');
-                :host:not([dismissible])::part(close) { display:none; }
+                :host:not([dismissible])::part(close) { display:none; } /* TODO: does not work in chrome */
                 :host {
                     --u1-ico-dir:'https://cdn.jsdelivr.net/npm/@material-icons/svg@1.0.11/svg/{icon}/baseline.svg';
                 }
@@ -71,22 +71,32 @@ class alert extends HTMLElement {
         `;
     }
     connectedCallback() {
-        this.setAttribute('role', 'alert');
-
         const variant = this.getAttribute('variant');
         const icon = this.getAttribute('icon') || variant2Icon[variant] || 'info';
         this.shadowRoot.querySelector('[name=icon]').innerHTML = `<u1-ico icon=${icon}></u1-ico>`;
         this.shadowRoot.querySelector('#close').onclick = () => this.hide();
+        this.setAttribute('role', 'alert');
     }
-    show() {
-        this.setAttribute('open', '');
-        this.setAttribute('aria-live', 'assertive');
-        getToolsContainer().appendChild(this);
-        clearTimeout(this.timeout);
-        this.timeout = setTimeout(() => this.hide(), 5000);
-    }
+    // show() { // todo
+    //     this.setAttribute('open', '');
+    //     this.setAttribute('aria-live', 'assertive');
+    //     getToolsContainer().appendChild(this);
+
+    //     // autohide and role=alertdialog if no actions
+    //     const hasActions = this.querySelector('[slot=action]')?.assignedElements().length > 0;
+    //     if (hasActions) {
+    //         this.setAttribute('role', 'alertdialog');
+    //     } else {
+    //         clearTimeout(this.hideTimeout);
+    //         this.hideTimeout = setTimeout(() => this.hide(), 5000);
+    //     }
+    //     return new Promise((resolve) => {
+    //         this.resolve = resolve;
+    //     });
+    // }
     hide() {
         this.removeAttribute('open');
+        this.resolve?.();
     }
 }
 
@@ -95,34 +105,20 @@ const variant2Icon = {info:'info',success:'check',warn:'warning',error:'error'};
 customElements.define('u1-alert', alert);
 
 /*
-alert.info = function(message, options) {
+alert = function(message, type, options) {
     const el = document.createElement('u1-alert');
     el.textContent = message;
-    el.setAttribute('type', 'info');
-    const icon = document.createElement('u1-ico');
-    icon.setAttribute('icon', 'info');
-    icon.setAttribute('slot', 'icon');
-    icon.style.color = 'var(--color)';
-    el.append(icon);
-    el.show();
-    return el;
+    options.icon && el.setAttribute('icon', options.icon);
+    el.setAttribute('type', type??'info');
+    return el.show();
 }
-alert.success = function(message, options) {
-    const el = alert.info(message, options);
-    el.setAttribute('type', 'success');
-    return el;
-}
-alert.warn = function(message, options) {
-    const el = alert.info(message, options);
-    el.setAttribute('type', 'warn');
-    return el;
-}
-alert.error = function(message, options) {
-    const el = alert.info(message, options);
-    el.setAttribute('type', 'error');
-    return el;
-}
+export info = (message, options) => alert(message, 'info', options);
+export success = (message, options) => alert(message, 'success', options);
+export warn = (message, options) => alert(message, 'warn', options);
+export error = (message, options) => alert(message, 'error', options);
 */
+
+
 
 /*
 function getToolsContainer() {
@@ -136,59 +132,54 @@ function getToolsContainer() {
 */
 
 
-
-
-
-
-
-class Waiter {
-    constructor(callback, duration) {
-        this.callback = callback;
-        this.duration = duration;
-        this.startTime = null;
-        this.timerId = null;
-        this.onProgress = null;
-        this.pauseTime = false; // Zeitpunkt, zu dem die Pause gestartet wurde
-        this.remaining = duration; // Verbleibende Zeit bis zum Ablauf des Timers
-    }
-    start() {
-        this.pauseTime = null;
-        this.startTime = Date.now();
-        this._startTimer();
-        return new Promise((resolve) => {
-            this.resolve = resolve;
-        });
-    }
-    pause() {
-        if (this.pauseTime) return;
-        clearTimeout(this.timerId);
-        this.pauseTime = Date.now();
-        this.remaining -= this.pauseTime - this.startTime; // Aktualisiere die verbleibende Zeit
-    }
-    _startTimer() {
-        this.timerId = setTimeout(() => {
-            this.callback?.();
-            this._clear();
-        }, this.remaining);
-        if (this.onProgress) this._emitProgress();
-    }
-    _emitProgress() {
-        const interval = 100; // Wie oft der Fortschritt aktualisiert wird (in ms)
-        const intervalId = setInterval(() => {
-            const now = Date.now();
-            const passed = now - this.startTime;
-            const left = this.duration - passed;
-            const progress = Math.min((passed / this.duration), 1);
-            this.onProgress({ left, passed, progress });
-            if (passed >= this.duration) clearInterval(intervalId);
-        }, interval);
-    }
-    _clear() {
-        clearTimeout(this.timerId);
-        this.resolve();
-        this.startTime = null;
-        this.timerId = null;
-        this.pauseTime = false;
-        this.remaining = this.duration; // Zurücksetzen der verbleibenden Zeit
-    }
-}
+// class Waiter {
+//     constructor(callback, duration) {
+//         this.callback = callback;
+//         this.duration = duration;
+//         this.startTime = null;
+//         this.timerId = null;
+//         this.onProgress = null;
+//         this.pauseTime = false; // Zeitpunkt, zu dem die Pause gestartet wurde
+//         this.remaining = duration; // Verbleibende Zeit bis zum Ablauf des Timers
+//     }
+//     start() {
+//         this.pauseTime = null;
+//         this.startTime = Date.now();
+//         this._startTimer();
+//         return new Promise((resolve) => {
+//             this.resolve = resolve;
+//         });
+//     }
+//     pause() {
+//         if (this.pauseTime) return;
+//         clearTimeout(this.timerId);
+//         this.pauseTime = Date.now();
+//         this.remaining -= this.pauseTime - this.startTime; // Aktualisiere die verbleibende Zeit
+//     }
+//     _startTimer() {
+//         this.timerId = setTimeout(() => {
+//             this.callback?.();
+//             this._clear();
+//         }, this.remaining);
+//         if (this.onProgress) this._emitProgress();
+//     }
+//     _emitProgress() {
+//         const interval = 100; // Wie oft der Fortschritt aktualisiert wird (in ms)
+//         const intervalId = setInterval(() => {
+//             const now = Date.now();
+//             const passed = now - this.startTime;
+//             const left = this.duration - passed;
+//             const progress = Math.min((passed / this.duration), 1);
+//             this.onProgress({ left, passed, progress });
+//             if (passed >= this.duration) clearInterval(intervalId);
+//         }, interval);
+//     }
+//     _clear() {
+//         clearTimeout(this.timerId);
+//         this.resolve();
+//         this.startTime = null;
+//         this.timerId = null;
+//         this.pauseTime = false;
+//         this.remaining = this.duration; // Zurücksetzen der verbleibenden Zeit
+//     }
+// }
